@@ -1,59 +1,68 @@
 # Week 4: Stablecoin Domain Modeling
 
 ## Weekly goal
-Create stablecoin domain models and policy validation for USDC/USDT/DAI-like behavior.
+Scaffold domain and policy boundaries for USDC/USDT/DAI-style processing before implementing full orchestration.
+
+## Build-first approach (recommended)
+Model domain and policy interfaces first, then add enforcement logic.
+
+### Scaffold structure
+In `services/payment-orchestrator/src/main/java` create:
+- `domain/`:
+  - `Stablecoin`, `Issuer`, `ReserveModel`, `NetworkPolicy`
+- `api/`:
+  - `PolicyController`
+  - validation request/response DTOs
+- `service/`:
+  - `PolicyValidationService`
+  - `TokenSupportService`
+- `persistence/`:
+  - repositories/entities for `stablecoin`, `issuer`, `token_network_policy`
+- `exception/`:
+  - `PolicyViolationException`
+
+In `docs/adr/`:
+- ADR for fiat-backed vs crypto-backed operating model tradeoffs
 
 ## Tasks
-- [ ] Add tables: `stablecoin`, `issuer`, `token_network_policy`.
-- [ ] Seed entries for `USDC`, `USDT`, `DAI`.
-- [ ] Implement payment preflight validation:
-  - [ ] token supported
-  - [ ] network supported
-  - [ ] address format valid
-- [ ] Add ADR for reserve model tradeoffs.
-- [ ] Add tests for allow/deny outcomes.
+- [ ] Scaffold domain entities and policy service interfaces.
+- [ ] Create DB schema for stablecoin policy tables.
+- [ ] Seed baseline entries for `USDC`, `USDT`, `DAI`.
+- [ ] Add preflight validation scaffold (`token`, `network`, `address`).
+- [ ] Add ADR and test scaffolding.
 
 ## Task verification commands
 
-1. Verify stablecoin policy tables are created.
+1. Build orchestrator module with dependencies.
 ```bash
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\d stablecoin"
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\d issuer"
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\d token_network_policy"
+cd /Users/phopper/Documents/StableCoin_Training
+./mvnw -pl services/payment-orchestrator -am -DskipTests install
 ```
-2. Verify seed data for USDC/USDT/DAI.
+
+2. Verify policy schema objects.
 ```bash
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "select symbol, issuer_name from stablecoin order by symbol;"
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\\d stablecoin"
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\\d issuer"
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\\d token_network_policy"
 ```
-3. Verify preflight validation rules.
+
+3. Verify seed data presence.
 ```bash
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "select * from stablecoin order by symbol;"
+```
+
+4. Verify policy-validation scaffolding tests.
+```bash
+cd /Users/phopper/Documents/StableCoin_Training
 ./mvnw -pl services/payment-orchestrator -Dtest='*Policy*Test,*Validation*Test' test
 ```
-4. Verify ADR file exists.
+
+5. Verify ADR exists.
 ```bash
+cd /Users/phopper/Documents/StableCoin_Training
 ls -la docs/adr
 ```
-5. Verify allow/deny test outcomes.
-```bash
-./mvnw -pl services/payment-orchestrator -Dtest='*Allow*Test,*Deny*Test' test
-```
 
-## Validated code example
-```java
-public void validate(PaymentIntent intent, TokenPolicy policy) {
-    if (!policy.enabled()) throw new PolicyViolation("TOKEN_DISABLED");
-    if (!policy.networks().contains(intent.network())) throw new PolicyViolation("NETWORK_NOT_ALLOWED");
-}
-```
-
-```java
-@Test
-void blocksUnsupportedNetwork() {
-    assertThrows(PolicyViolation.class, () -> validator.validate(intent, policy));
-}
-```
-
-## Validation commands
-```bash
-./mvnw -pl services/payment-orchestrator test
-```
+## Notes
+- Keep this week focused on model correctness and policy interfaces; full payment flow behavior comes later.
+- Prefer explicit error codes in policy exceptions (`TOKEN_DISABLED`, `NETWORK_NOT_ALLOWED`, etc.).

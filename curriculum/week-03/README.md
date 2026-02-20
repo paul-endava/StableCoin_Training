@@ -1,61 +1,74 @@
 # Week 3: ERC-20 Integration
 
 ## Weekly goal
-Deploy/test an ERC-20 and call it through Java bindings from Spring.
+Scaffold token integration boundaries, then implement ERC-20 reads/transfers through dedicated client/service classes.
+
+## Build-first approach (recommended)
+Create token-focused package boundaries first, then wire endpoints.
+
+### Scaffold structure
+Extend `services/chain-adapter-eth/src/main/java`:
+- `api/`:
+  - `TokenController`
+  - `TokenTransferRequest` / `TokenBalanceResponse`
+- `eth/`:
+  - `Erc20Client`
+  - `ContractCallException`
+- `service/`:
+  - `TokenQueryService`
+  - `TokenTransferService`
+- `config/`:
+  - `TokenConfigProperties` (contract addresses / defaults)
+
+Also add contract scaffolding under `contracts/`:
+- `contracts/src/` (ERC-20 contract)
+- `contracts/script/` (deploy script)
+- `contracts/test/` (contract tests)
 
 ## Tasks
-- [ ] Add ERC-20 contract in `contracts/src`.
-- [ ] Add deploy script and save contract address to config.
-- [ ] Generate Java wrapper and integrate with `chain-adapter-eth`.
-- [ ] Implement endpoints: `balanceOf`, `transfer`, `approve`, `transferFrom`.
-- [ ] Add integration tests against local Anvil.
+- [ ] Compile ERC-20 contract scaffold.
+- [ ] Add deploy script scaffold and capture deployed address.
+- [ ] Add `Erc20Client` abstraction in Java.
+- [ ] Add token API scaffolding (`balanceOf`, `transfer`).
+- [ ] Add integration test skeletons against Anvil.
 
 ## Task verification commands
 
-1. Verify ERC-20 contract compiles.
+1. Verify Anvil is reachable.
 ```bash
-cd contracts
-# If using Foundry
+curl -s -X POST http://127.0.0.1:8545 \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+```
+Expected:
+```json
+{"jsonrpc":"2.0","id":1,"result":"0x7a69"}
+```
+
+2. Verify contract compile (Foundry path).
+```bash
+cd /Users/phopper/Documents/StableCoin_Training/contracts
 forge build
 ```
-2. Verify deploy script produces contract address output.
+
+3. Verify deploy script wiring (example).
 ```bash
-cd contracts
-# Example command; adjust for your script tooling
-forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
-```
-3. Verify Java wrapper generation exists.
-```bash
-rg -n "class .*ERC20" services/chain-adapter-eth
-```
-4. Verify ERC-20 endpoints.
-```bash
-curl -i http://localhost:8081/api/v1/tokens/{tokenAddress}/balances/{walletAddress}
-curl -i -X POST http://localhost:8081/api/v1/tokens/transfer -H 'Content-Type: application/json' -d '{"token":"0x...","from":"0x...","to":"0x...","amount":"25"}'
-```
-5. Verify integration tests against local Anvil.
-```bash
-./mvnw -pl services/chain-adapter-eth -Dtest='*Erc20*Integration*' test
+cd /Users/phopper/Documents/StableCoin_Training/contracts
+forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
 ```
 
-## Validated code example
-```java
-public BigInteger tokenBalance(String holder) throws Exception {
-    return erc20.balanceOf(holder).send();
-}
-```
-
-```java
-@Test
-void transferEmitsBalanceChange() throws Exception {
-    BigInteger before = client.tokenBalance(alice);
-    client.transfer(alice, BigInteger.valueOf(25));
-    BigInteger after = client.tokenBalance(alice);
-    assertEquals(before.add(BigInteger.valueOf(25)), after);
-}
-```
-
-## Validation commands
+4. Verify Java ERC-20 scaffolding exists.
 ```bash
-./mvnw -pl services/chain-adapter-eth test
+cd /Users/phopper/Documents/StableCoin_Training
+rg -n "class Erc20Client|class TokenController|class TokenQueryService" services/chain-adapter-eth/src/main/java
 ```
+
+5. Verify token integration tests.
+```bash
+cd /Users/phopper/Documents/StableCoin_Training
+./mvnw -pl services/chain-adapter-eth -Dtest='*Erc20*Test,*Token*Integration*' test
+```
+
+## Notes
+- Scaffold first; endpoint payload contracts should be stable before full chain write logic.
+- Use `127.0.0.1` for RPC in deploy scripts and service config.

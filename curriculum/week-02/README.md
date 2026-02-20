@@ -1,65 +1,70 @@
 # Week 2: Transaction Submission and Idempotency
 
 ## Weekly goal
-Submit Ethereum transactions from Spring with deterministic idempotency and nonce handling.
+Add a scaffolded write path for native ETH transfers with deterministic idempotency and nonce coordination.
+
+## Build-first approach (recommended)
+Define package structure first, then add endpoint behavior.
+
+### Scaffold structure
+Extend `services/chain-adapter-eth/src/main/java`:
+- `api/`:
+  - `TransferController`
+  - `TransferRequest` / `TransferResponse`
+- `config/`:
+  - extend `EthRpcProperties` with fee + chain fields
+- `eth/`:
+  - `RawTransactionSender`
+  - `NonceProvider`
+- `service/`:
+  - `TransferService`
+  - `IdempotencyService`
+  - `NonceManager`
+- `persistence/`:
+  - `IdempotencyRecord`
+  - `IdempotencyRepository`
 
 ## Tasks
-- [ ] Add RPC config (`rpcUrl`, `chainId`, `minConfirmations`, `maxFeePerGas`).
-- [ ] Implement `POST /api/v1/transfers/native` for ETH transfers.
-- [ ] Add idempotency table: `idempotency_key`, `request_hash`, `tx_hash`.
-- [ ] Implement nonce manager to prevent collisions.
-- [ ] Add retry for transient RPC failures.
+- [ ] Add transfer API scaffolding (`POST /api/v1/transfers/native`).
+- [ ] Add idempotency persistence model and table.
+- [ ] Add nonce manager abstraction.
+- [ ] Add retry wrapper for transient RPC errors.
+- [ ] Validate same request + idempotency key returns same tx hash.
 
 ## Task verification commands
 
-1. Verify RPC configuration is loaded.
+1. Build modules required for Week 2 work.
 ```bash
-./mvnw -pl services/chain-adapter-eth -Dtest='*Config*Test' test
+cd /Users/phopper/Documents/StableCoin_Training
+./mvnw -pl libs/common-domain,libs/common-observability,libs/common-testkit,services/chain-adapter-eth -am -DskipTests install
 ```
-2. Verify native transfer endpoint.
+
+2. Run service.
+```bash
+cd /Users/phopper/Documents/StableCoin_Training/services/chain-adapter-eth
+../../mvnw -f pom.xml spring-boot:run
+```
+
+3. Verify transfer endpoint wiring.
 ```bash
 curl -i -X POST http://localhost:8081/api/v1/transfers/native \
   -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: k-001' \
   -d '{"from":"0xabc","to":"0xdef","valueWei":"1000"}'
 ```
-3. Verify idempotency table and record writes.
+Expected for scaffold phase: endpoint returns a structured response (or controlled `4xx`) rather than unhandled `500`.
+
+4. Verify idempotency table exists.
 ```bash
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\d idempotency"
-docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "select * from idempotency order by created_at desc limit 5;"
-```
-4. Verify nonce manager behavior.
-```bash
-./mvnw -pl services/chain-adapter-eth -Dtest='*Nonce*Test' test
-```
-5. Verify retry policy on transient RPC failures.
-```bash
-./mvnw -pl services/chain-adapter-eth -Dtest='*Retry*Test' test
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\\d idempotency"
 ```
 
-## Validated code example
-```java
-@Transactional
-public String submit(TransferRequest request, String idempotencyKey) {
-    return idempotencyRepository.findByKey(idempotencyKey)
-        .map(IdempotencyRecord::txHash)
-        .orElseGet(() -> sender.sendNewTransaction(request, idempotencyKey));
-}
-```
-
-```java
-@Test
-void returnsSameHashForRepeatedIdempotentRequest() {
-    String first = service.submit(req, "k-001");
-    String second = service.submit(req, "k-001");
-    assertEquals(first, second);
-}
-```
-
-## Validation commands
+5. Verify idempotency + nonce tests.
 ```bash
-./mvnw -pl services/chain-adapter-eth test
-curl -X POST http://localhost:8081/api/v1/transfers/native \
-  -H 'Idempotency-Key: k-001' -H 'Content-Type: application/json' \
-  -d '{"from":"0x...","to":"0x...","valueWei":"1000000000000000"}'
+cd /Users/phopper/Documents/StableCoin_Training
+./mvnw -pl services/chain-adapter-eth -Dtest='*Idempotency*Test,*Nonce*Test,*Retry*Test' test
 ```
+
+## Notes
+- Keep runtime command pinned to module POM (`-f pom.xml`) to avoid parent `mainClass` errors.
+- Keep `eth.rpc.base-url` on IPv4 (`http://127.0.0.1:8545`).
