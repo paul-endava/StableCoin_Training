@@ -10,6 +10,34 @@ Ship an end-to-end stablecoin payment MVP and demo it from IntelliJ with Docker 
 - [ ] Conduct architecture review and capture hardening backlog.
 - [ ] Record demo script and expected outputs.
 
+## Task verification commands
+
+1. Verify payment API endpoints.
+```bash
+curl -i -X POST http://localhost:8080/api/v1/payments -H 'Content-Type: application/json' -d '{"asset":"USDC","amount":"10.00","to":"0xabc"}'
+curl -i http://localhost:8080/api/v1/payments/{paymentId}
+curl -i http://localhost:8080/api/v1/payments/{paymentId}/audit
+```
+2. Verify full pipeline execution in logs.
+```bash
+docker compose logs --tail=200 payment-orchestrator
+docker compose logs --tail=200 event-indexer
+docker compose logs --tail=200 ledger-service
+```
+3. Verify runbooks exist.
+```bash
+ls -la docs/runbooks
+```
+4. Verify architecture review artifacts.
+```bash
+ls -la docs/architecture
+ls -la docs/adr
+```
+5. Verify demo script output.
+```bash
+./mvnw test
+```
+
 ## Validated code example
 ```java
 public PaymentResponse createPayment(PaymentRequest request) {

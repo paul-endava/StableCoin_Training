@@ -10,6 +10,34 @@ Deploy/test an ERC-20 and call it through Java bindings from Spring.
 - [ ] Implement endpoints: `balanceOf`, `transfer`, `approve`, `transferFrom`.
 - [ ] Add integration tests against local Anvil.
 
+## Task verification commands
+
+1. Verify ERC-20 contract compiles.
+```bash
+cd contracts
+# If using Foundry
+forge build
+```
+2. Verify deploy script produces contract address output.
+```bash
+cd contracts
+# Example command; adjust for your script tooling
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+```
+3. Verify Java wrapper generation exists.
+```bash
+rg -n "class .*ERC20" services/chain-adapter-eth
+```
+4. Verify ERC-20 endpoints.
+```bash
+curl -i http://localhost:8081/api/v1/tokens/{tokenAddress}/balances/{walletAddress}
+curl -i -X POST http://localhost:8081/api/v1/tokens/transfer -H 'Content-Type: application/json' -d '{"token":"0x...","from":"0x...","to":"0x...","amount":"25"}'
+```
+5. Verify integration tests against local Anvil.
+```bash
+./mvnw -pl services/chain-adapter-eth -Dtest='*Erc20*Integration*' test
+```
+
 ## Validated code example
 ```java
 public BigInteger tokenBalance(String holder) throws Exception {

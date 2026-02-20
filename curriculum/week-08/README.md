@@ -10,6 +10,29 @@ Create an immutable journal and reconcile confirmed on-chain transfers.
 - [ ] Add discrepancy workflow and API.
 - [ ] Add daily close report query.
 
+## Task verification commands
+
+1. Verify journal schema.
+```bash
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "\d ledger_entry"
+```
+2. Verify posting rules via tests.
+```bash
+./mvnw -pl services/ledger-service -Dtest='*Posting*Test' test
+```
+3. Verify reconciliation results.
+```bash
+./mvnw -pl services/ledger-service -Dtest='*Reconciliation*Test' test
+```
+4. Verify discrepancy API.
+```bash
+curl -i http://localhost:8085/api/v1/reconciliation/discrepancies
+```
+5. Verify daily close report query.
+```bash
+docker exec -it stablecoin-postgres psql -U stablecoin -d stablecoin -c "select close_date, status from ledger_daily_close order by close_date desc limit 7;"
+```
+
 ## Validated code example
 ```java
 public void assertBalanced(List<LedgerEntry> entries) {

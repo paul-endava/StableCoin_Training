@@ -2,6 +2,21 @@
 
 This repository is a 12-week learning and build track for stablecoin payment orchestration on Ethereum with Java/Spring.
 
+## Docker setup (macOS)
+
+1. Install Docker Desktop for Mac:
+   - Download and install from [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. Start Docker Desktop and wait until the status shows Docker is running.
+3. Verify installation:
+
+```bash
+docker --version
+docker compose version
+docker run --rm hello-world
+```
+
+4. If you use Apple Silicon (M1/M2/M3), keep the default ARM setup unless a specific image requires x86 emulation.
+
 ## Quick start
 
 1. Start infrastructure:

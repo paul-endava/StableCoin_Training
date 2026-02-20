@@ -10,6 +10,29 @@ Add a restricted transfer path and compare with standard ERC-20 operations.
 - [ ] Write ADR comparing ERC-20 and restricted token operations.
 - [ ] Add tests for allowed vs denied restricted transfer.
 
+## Task verification commands
+
+1. Verify restricted token pre-check implementation tests.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*Restricted*Precheck*Test' test
+```
+2. Verify token-type branch behavior.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*TokenTypeRouting*Test' test
+```
+3. Verify restriction reason mapping.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*RestrictionReason*Test' test
+```
+4. Verify ADR exists and is reviewed.
+```bash
+ls -la docs/adr
+```
+5. Verify allowed and denied restricted transfer tests.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*RestrictedTransfer*Test' test
+```
+
 ## Validated code example
 ```java
 public TransferGateResult precheck(RestrictedTransferRequest request) {

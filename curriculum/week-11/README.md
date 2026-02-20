@@ -10,6 +10,29 @@ Make the system operable: traces, metrics, failure tests, and key controls.
 - [ ] Run resilience tests for RPC downtime and duplicate events.
 - [ ] Enforce secret handling and signing ACL checks.
 
+## Task verification commands
+
+1. Verify trace propagation.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*Tracing*Test' test
+```
+2. Verify metrics are emitted.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*Metrics*Test' test
+```
+3. Verify structured logging format.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*Logging*Test' test
+```
+4. Verify resilience scenarios.
+```bash
+./mvnw -pl services/payment-orchestrator -Dtest='*Resilience*Test,*Chaos*Test' test
+```
+5. Verify signing ACL and secret controls.
+```bash
+./mvnw -pl services/wallet-service -Dtest='*Security*Test,*Acl*Test' test
+```
+
 ## Validated code example
 ```java
 public Timer.Sample startTimedOperation(MeterRegistry meterRegistry) {
