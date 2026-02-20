@@ -1,0 +1,14 @@
+# Maven/Java build output
+**/target/
+*.class
+*.jar
+
+# Local Maven repository used by this project
+.m2repo/
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store
